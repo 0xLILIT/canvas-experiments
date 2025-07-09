@@ -1,9 +1,9 @@
 import { Body, PolygonBody, CircleBody } from "./body.js";
 import { Vector2 } from "./vector2.js";
 
-interface Settings {
-  debugView: boolean;
-  scene: { G: number };
+interface SceneSettings {
+  rendering: { debug: boolean };
+  physics: { G: number };
   bodies: { mass: number; elasticity: number };
 }
 
@@ -15,9 +15,9 @@ export class Scene {
   private lastTimestamp: number | null = null;
   private animationFrameRequestID: number | null = null;
   private framesLastSecond: Array<number> = [];
-  private settings: Settings = {
-    debugView: false,
-    scene: { G: 1000 },
+  private settings: SceneSettings = {
+    rendering: { debug: false },
+    physics: { G: 1000 },
     bodies: { mass: 100, elasticity: 0.5 },
   };
   private debugLines: Array<[Vector2, Vector2, number]> = [];
@@ -39,7 +39,10 @@ export class Scene {
 
     this.canvas.addEventListener("click", (event: MouseEvent) => {
       const { offsetX, offsetY }: { offsetX: number; offsetY: number } = event;
-      this.bodies.push(Body.circle(offsetX, offsetY, 10));
+      const body = Body.circle(offsetX, offsetY, 10);
+      body.mass = this.settings.bodies.mass;
+      body.elasticity = this.settings.bodies.elasticity;
+      this.bodies.push(body);
     });
 
     const settingsInputs: NodeListOf<HTMLInputElement> =
@@ -53,7 +56,7 @@ export class Scene {
       } else if (input.id.includes("grav")) {
         input.addEventListener("change", () => {
           const G = Number(input.value);
-          this.settings.scene.G = G;
+          this.settings.physics.G = G;
         });
       } else if (input.id.includes("elasticity")) {
         input.addEventListener("change", () => {
@@ -63,7 +66,7 @@ export class Scene {
       } else if (input.id.includes("debug")) {
         input.addEventListener("change", () => {
           const debugView = input.checked;
-          this.settings.debugView = debugView;
+          this.settings.rendering.debug = debugView;
         });
       }
 
@@ -119,7 +122,7 @@ export class Scene {
   }
 
   private update(dt: number): void {
-    if (this.settings.debugView) {
+    if (this.settings.rendering.debug) {
       this.debugLines = [];
     }
 
@@ -138,11 +141,11 @@ export class Scene {
         distance = Math.sqrt(distance + softening ** 2);
 
         const force: number =
-          this.settings.scene.G * ((b1.mass * b2.mass) / distance ** 2);
+          this.settings.physics.G * ((b1.mass * b2.mass) / distance ** 2);
         const fx: number = force * direction.x;
         const fy: number = force * direction.y;
 
-        if (this.settings.debugView) {
+        if (this.settings.rendering.debug) {
           this.debugLines!.push([b1.position, b2.position, force]);
         }
 
@@ -249,7 +252,7 @@ export class Scene {
     this.ctx!.fillStyle = "black";
     this.drawFPS();
     this.drawBodies();
-    if (this.settings.debugView) this.drawDebug();
+    if (this.settings.rendering.debug) this.drawDebug();
   }
 
   public play(): void {
