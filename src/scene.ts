@@ -8,19 +8,19 @@ interface SceneSettings {
 }
 
 export class Scene {
-  private bodies: Array<Body> = [];
-  private canvas: HTMLCanvasElement | null;
-  private ctx: CanvasRenderingContext2D | null;
-  private running: boolean = false;
-  private lastTimestamp: number | null = null;
-  private animationFrameRequestID: number | null = null;
-  private framesLastSecond: Array<number> = [];
-  private settings: SceneSettings = {
+  protected bodies: Array<Body> = [];
+  protected canvas: HTMLCanvasElement | null;
+  protected ctx: CanvasRenderingContext2D | null;
+  protected running: boolean = false;
+  protected lastTimestamp: number | null = null;
+  protected animationFrameRequestID: number | null = null;
+  protected framesLastSecond: Array<number> = [];
+  protected settings: SceneSettings = {
     rendering: { debug: false },
     physics: { G: 1000 },
     bodies: { mass: 100, elasticity: 0.5 },
   };
-  private debugLines: Array<[Vector2, Vector2, number]> = [];
+  protected debugLines: Array<[Vector2, Vector2, number]> = [];
 
   constructor(
     canvas: HTMLCanvasElement | null = document.querySelector("canvas"),
@@ -36,44 +36,6 @@ export class Scene {
       throw new Error(
         "Could not initialize scene.\nReason: Could not get rendering context from Canvas DOM element.",
       );
-
-    this.canvas.addEventListener("click", (event: MouseEvent) => {
-      const { offsetX, offsetY }: { offsetX: number; offsetY: number } = event;
-      const body = Body.circle(offsetX, offsetY, 10);
-      body.mass = this.settings.bodies.mass;
-      body.elasticity = this.settings.bodies.elasticity;
-      this.bodies.push(body);
-    });
-
-    const settingsInputs: NodeListOf<HTMLInputElement> =
-      document.querySelectorAll("#settings-container > input");
-    settingsInputs.forEach((input) => {
-      if (input.id.includes("mass")) {
-        input.addEventListener("change", () => {
-          const mass = Number(input.value);
-          this.settings.bodies.mass = mass;
-        });
-      } else if (input.id.includes("grav")) {
-        input.addEventListener("change", () => {
-          const G = Number(input.value);
-          this.settings.physics.G = G;
-        });
-      } else if (input.id.includes("elasticity")) {
-        input.addEventListener("change", () => {
-          const elasticity = Number(input.value);
-          this.settings.bodies.elasticity = elasticity;
-        });
-      } else if (input.id.includes("debug")) {
-        input.addEventListener("change", () => {
-          const debugView = input.checked;
-          this.settings.rendering.debug = debugView;
-        });
-      }
-
-      input.addEventListener("change", () => {
-        this.updateSettings();
-      });
-    });
   }
 
   get fps(): number {
@@ -88,7 +50,7 @@ export class Scene {
     return this.canvas!.height;
   }
 
-  private updateSettings(): void {
+  protected updateSettings(): void {
     console.log("Updating settings...");
     console.log(this.settings);
     for (const body of this.bodies) {
@@ -97,7 +59,7 @@ export class Scene {
     }
   }
 
-  private tick(timestamp: number): void {
+  protected tick(timestamp: number): void {
     if (!this.running) return;
 
     while (
@@ -121,7 +83,7 @@ export class Scene {
     this.animationFrameRequestID = requestAnimationFrame((ts) => this.tick(ts));
   }
 
-  private update(dt: number): void {
+  protected update(dt: number): void {
     if (this.settings.rendering.debug) {
       this.debugLines = [];
     }
@@ -178,14 +140,14 @@ export class Scene {
     }
   }
 
-  private drawFPS(): void {
+  protected drawFPS(): void {
     this.ctx!.fillStyle = "green";
     this.ctx!.font = "16px monospace";
     this.ctx!.fillText("FPS: " + String(this.fps), 5, 20);
     this.ctx!.fillStyle = "black";
   }
 
-  private drawDebug(): void {
+  protected drawDebug(): void {
     this.ctx!.fillStyle = "green";
     this.ctx!.font = "16px monospace";
     this.ctx!.fillText(
@@ -220,7 +182,7 @@ export class Scene {
     }
   }
 
-  private drawBodies(): void {
+  protected drawBodies(): void {
     for (const body of this.bodies) {
       this.ctx!.fillStyle = body.color;
       if (body instanceof PolygonBody) {
@@ -245,9 +207,9 @@ export class Scene {
     }
   }
 
-  private draw(): void {
+  protected draw(): void {
     this.ctx!.clearRect(0, 0, this.width, this.height);
-    this.ctx!.fillStyle = "white";
+    this.ctx!.fillStyle = "black";
     this.ctx!.fillRect(0, 0, this.width, this.height);
     this.ctx!.fillStyle = "black";
     this.drawFPS();
