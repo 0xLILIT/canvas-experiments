@@ -1,4 +1,4 @@
-import { Body } from "./body.js";
+import { Body, PolygonBody, CircleBody } from "./body.js";
 import { Vector2 } from "./vector2.js";
 
 interface Settings {
@@ -39,14 +39,17 @@ export class Scene {
 
     this.canvas.addEventListener("click", (event: MouseEvent) => {
       const { offsetX, offsetY }: { offsetX: number; offsetY: number } = event;
-      this.bodies.push(
-        new Body(
-          new Vector2(offsetX, offsetY),
-          new Vector2(),
-          this.settings.bodies.mass,
-          this.settings.bodies.elasticity,
-        ),
-      );
+      const r = Math.random();
+      if (r < 0.3) {
+        const body = Body.rectangle(offsetX, offsetY, 10, 10);
+        this.bodies.push(body);
+      } else if (r > 0.3 && r < 0.6) {
+        const body = Body.circle(offsetX, offsetY, 5);
+        this.bodies.push(body);
+      } else {
+        const body = Body.triangle(offsetX, offsetY, 10, 10);
+        this.bodies.push(body);
+      }
     });
 
     const settingsInputs: NodeListOf<HTMLInputElement> =
@@ -56,7 +59,6 @@ export class Scene {
         input.addEventListener("change", () => {
           const mass = Number(input.value);
           this.settings.bodies.mass = mass;
-          this.updateSettings();
         });
       } else if (input.id.includes("grav")) {
         input.addEventListener("change", () => {
@@ -67,7 +69,6 @@ export class Scene {
         input.addEventListener("change", () => {
           const elasticity = Number(input.value);
           this.settings.bodies.elasticity = elasticity;
-          this.updateSettings();
         });
       } else if (input.id.includes("debug")) {
         input.addEventListener("change", () => {
@@ -75,6 +76,10 @@ export class Scene {
           this.settings.debugView = debugView;
         });
       }
+
+      input.addEventListener("change", () => {
+        this.updateSettings();
+      });
     });
   }
 
@@ -100,15 +105,16 @@ export class Scene {
   }
 
   private tick(timestamp: number): void {
+    if (!this.running) return;
+
     while (
       this.framesLastSecond.length > 0 &&
       this.framesLastSecond[0] <= timestamp - 1000
     ) {
       this.framesLastSecond.shift();
     }
-    this.framesLastSecond.push(timestamp);
 
-    if (!this.running) return;
+    this.framesLastSecond.push(timestamp);
 
     if (this.lastTimestamp === null) {
       this.lastTimestamp = timestamp;
@@ -138,11 +144,9 @@ export class Scene {
 
         if (distance === 0) continue;
 
-        // TEST: Gravitational softening
         const softening = 5;
         distance = Math.sqrt(distance + softening ** 2);
 
-        // const distance: number = Math.max(5, displacement.magnitude);
         const force: number =
           this.settings.scene.G * ((b1.mass * b2.mass) / distance ** 2);
         const fx: number = force * direction.x;
@@ -181,53 +185,80 @@ export class Scene {
     }
   }
 
-  private draw(): void {
-    this.ctx!.clearRect(0, 0, this.width, this.height);
-    this.ctx!.fillStyle = "white";
-    this.ctx!.fillRect(0, 0, this.width, this.height);
+  private drawFPS(): void {
     this.ctx!.fillStyle = "green";
     this.ctx!.font = "16px monospace";
     this.ctx!.fillText("FPS: " + String(this.fps), 5, 20);
+    this.ctx!.fillStyle = "black";
+  }
+
+  private drawDebug(): void {
+    this.ctx!.fillStyle = "green";
+    this.ctx!.font = "16px monospace";
     this.ctx!.fillText(
       "Number of bodies: " + String(this.bodies.length),
       5,
       40,
     );
 
-    this.ctx!.fillStyle = "black";
-    for (const body of this.bodies) {
-      const size = 5;
+    for (const debugLine of this.debugLines) {
       this.ctx!.beginPath();
-      this.ctx!.arc(body.x, body.y, size, 0, 2 * Math.PI);
-      this.ctx!.fill();
-
-      if (this.settings.debugView) {
-        this.ctx!.font = "10px monospace";
-        this.ctx!.fillText(
-          `(${body.x.toPrecision(3)}, ${body.y.toPrecision(3)})`,
-          body.x + 6,
-          body.y,
-        );
-        this.ctx!.fillText(
-          `(${body.vx.toPrecision(3)}, ${body.vy.toPrecision(3)})`,
-          body.x + 6,
-          body.y + 10,
-        );
-      }
+      const b1 = debugLine[0];
+      const b2 = debugLine[1];
+      const force = debugLine[2];
+      this.ctx!.strokeStyle = `rgba(0,0,0,${Math.min(1, Math.log10(force) / 3)})`;
+      this.ctx!.moveTo(b1.x, b1.y);
+      this.ctx!.lineTo(b2.x, b2.y);
+      this.ctx!.stroke();
     }
 
-    if (this.settings.debugView) {
-      for (const debugLine of this.debugLines) {
+    for (const body of this.bodies) {
+      this.ctx!.font = "10px monospace";
+      this.ctx!.fillText(
+        `(${body.x.toPrecision(3)}, ${body.y.toPrecision(3)})`,
+        body.x + 6,
+        body.y,
+      );
+      this.ctx!.fillText(
+        `(${body.vx.toPrecision(3)}, ${body.vy.toPrecision(3)})`,
+        body.x + 6,
+        body.y + 10,
+      );
+    }
+  }
+
+  private drawBodies(): void {
+    for (const body of this.bodies) {
+      if (body instanceof PolygonBody) {
+        const vertices: Array<Vector2> = body.vertices.map((vertex) => {
+          return vertex.toAdded(body.position);
+        });
+
         this.ctx!.beginPath();
-        const b1 = debugLine[0];
-        const b2 = debugLine[1];
-        const force = debugLine[2];
-        this.ctx!.strokeStyle = `rgba(0,0,0,${Math.min(1, Math.log10(force) / 3)})`;
-        this.ctx!.moveTo(b1.x, b1.y);
-        this.ctx!.lineTo(b2.x, b2.y);
-        this.ctx!.stroke();
+        this.ctx!.moveTo(vertices[0].x, vertices[0].y);
+
+        for (let i = 1; i < vertices.length; i++) {
+          this.ctx!.lineTo(vertices[i].x, vertices[i].y);
+        }
+
+        this.ctx!.closePath();
+        this.ctx!.fill();
+      } else if (body instanceof CircleBody) {
+        this.ctx!.beginPath();
+        this.ctx!.arc(body.x, body.y, body.radius, 0, 2 * Math.PI);
+        this.ctx!.fill();
       }
     }
+  }
+
+  private draw(): void {
+    this.ctx!.clearRect(0, 0, this.width, this.height);
+    this.ctx!.fillStyle = "white";
+    this.ctx!.fillRect(0, 0, this.width, this.height);
+    this.ctx!.fillStyle = "black";
+    this.drawFPS();
+    this.drawBodies();
+    if (this.settings.debugView) this.drawDebug();
   }
 
   public play(): void {
