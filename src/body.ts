@@ -5,6 +5,7 @@ export interface BodyOptions {
   velocity?: Vector2;
   mass?: number;
   elasticity?: number;
+  color?: string;
 }
 
 export interface PolygonBodyOptions extends BodyOptions {
@@ -20,6 +21,7 @@ export class Body {
   public velocity: Vector2;
   public mass: number;
   public elasticity: number;
+  public color: string;
 
   static rectangle(x: number, y: number, width: number, height: number) {
     const hw: number = width / 2;
@@ -62,11 +64,13 @@ export class Body {
     velocity = new Vector2(),
     mass = 1,
     elasticity = 0.5,
+    color = "black",
   }: BodyOptions = {}) {
     this.position = position;
     this.mass = mass;
     this.velocity = velocity;
     this.elasticity = elasticity;
+    this.color = color;
   }
 
   get x(): number {

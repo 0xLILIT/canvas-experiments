@@ -39,17 +39,7 @@ export class Scene {
 
     this.canvas.addEventListener("click", (event: MouseEvent) => {
       const { offsetX, offsetY }: { offsetX: number; offsetY: number } = event;
-      const r = Math.random();
-      if (r < 0.3) {
-        const body = Body.rectangle(offsetX, offsetY, 10, 10);
-        this.bodies.push(body);
-      } else if (r > 0.3 && r < 0.6) {
-        const body = Body.circle(offsetX, offsetY, 5);
-        this.bodies.push(body);
-      } else {
-        const body = Body.triangle(offsetX, offsetY, 10, 10);
-        this.bodies.push(body);
-      }
+      this.bodies.push(Body.circle(offsetX, offsetY, 10));
     });
 
     const settingsInputs: NodeListOf<HTMLInputElement> =
@@ -229,6 +219,7 @@ export class Scene {
 
   private drawBodies(): void {
     for (const body of this.bodies) {
+      this.ctx!.fillStyle = body.color;
       if (body instanceof PolygonBody) {
         const vertices: Array<Vector2> = body.vertices.map((vertex) => {
           return vertex.toAdded(body.position);
