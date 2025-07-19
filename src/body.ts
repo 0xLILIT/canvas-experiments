@@ -6,10 +6,14 @@ export interface BodyOptions {
   mass?: number;
   elasticity?: number;
   color?: string;
+  hasPhysics?: boolean;
+  isStatic?: boolean;
 }
 
 export interface PolygonBodyOptions extends BodyOptions {
   vertices?: Array<Vector2>;
+  width?: number;
+  height?: number;
 }
 
 export interface CircleBodyOptions extends BodyOptions {
@@ -22,6 +26,8 @@ export class Body {
   public mass: number;
   public elasticity: number;
   public color: string;
+  public hasPhysics: boolean;
+  public isStatic: boolean;
 
   static rectangle(x: number, y: number, width: number, height: number) {
     const hw: number = width / 2;
@@ -34,6 +40,8 @@ export class Body {
     const opts: PolygonBodyOptions = {
       vertices: [tl, tr, br, bl],
       position: new Vector2(x, y),
+      width,
+      height,
     };
 
     return new PolygonBody(opts);
@@ -65,12 +73,16 @@ export class Body {
     mass = 1,
     elasticity = 0.5,
     color = "black",
+    hasPhysics = false,
+    isStatic = true,
   }: BodyOptions = {}) {
     this.position = position;
     this.mass = mass;
     this.velocity = velocity;
     this.elasticity = elasticity;
     this.color = color;
+    this.hasPhysics = hasPhysics;
+    this.isStatic = isStatic;
   }
 
   get x(): number {
@@ -104,12 +116,38 @@ export class Body {
   set vy(val: number) {
     this.velocity.y = val;
   }
+
+  get magnitude(): number {
+    return this.position.magnitude;
+  }
+
+  get magnitudeSquared(): number {
+    return this.position.magnitudeSquared;
+  }
+
+  invertX(): void {
+    this.position.invertX();
+  }
+
+  invertY(): void {
+    this.position.invertY();
+  }
 }
 
 export class PolygonBody extends Body {
   public vertices: Array<Vector2>;
-  constructor({ vertices = [], ...rest }: PolygonBodyOptions = {}) {
+  public width: number;
+  public height: number;
+
+  constructor({
+    width = 0,
+    height = 0,
+    vertices = [],
+    ...rest
+  }: PolygonBodyOptions = {}) {
     super(rest);
+    this.width = width;
+    this.height = height;
     this.vertices = vertices;
   }
 }
