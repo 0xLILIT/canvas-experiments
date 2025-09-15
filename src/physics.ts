@@ -20,7 +20,7 @@ export class PhysicsEngine {
     }: SceneContext,
   ): void {
     switch (this.mode) {
-      case "earth":
+      case "earth": {
         const g: number = 9.8 * 200;
 
         for (const body of bodies) {
@@ -63,6 +63,7 @@ export class PhysicsEngine {
             const dy = body.y - body2.y;
             const d = Math.sqrt(dx ** 2 + dy ** 2);
             if (d <= width + width2) {
+              // UNUSED
             }
           }
 
@@ -88,8 +89,9 @@ export class PhysicsEngine {
         }
 
         break;
+      }
 
-      case "space":
+      case "space": {
         for (let i = 0; i < bodies.length; i++) {
           for (let j = i + 1; j < bodies.length; j++) {
             const b1: Body = bodies[i];
@@ -141,6 +143,7 @@ export class PhysicsEngine {
           }
         }
         break;
+      }
 
       case "particle":
         break;
