@@ -1,3 +1,1 @@
-# 2dPhysics
-Messing around with 2d physics and Canvas rendering.
-
+# Collection of various stuff I've done using the Canvas API
